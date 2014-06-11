@@ -9,7 +9,9 @@ require 'rspec'
 #   expect { subject }.to make_database_queries(count: 1)
 #
 # @see QueryCounter
-RSpec::Matchers.define :make_database_queries do |options = {}|
+RSpec::Matchers.define :make_database_queries do |*args|
+
+  options = args[0] || {}
 
   # Taken from ActionView::Helpers::TextHelper
   def pluralize(count, singular, plural = nil)
@@ -22,11 +24,16 @@ RSpec::Matchers.define :make_database_queries do |options = {}|
     "#{count || 0} #{word}"
   end
 
+  def sql_subscribed(callback, *args, &block)
+    subscriber = ActiveSupport::Notifications.subscribe(*args, &callback)
+    yield
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber)
+  end
+
   match do |block|
     @counter = QueryCounter.new
-    ActiveSupport::Notifications.subscribed(@counter.to_proc,
-                                            'sql.active_record',
-                                            &block)
+    sql_subscribed(@counter.to_proc, 'sql.active_record', &block)
     if absolute_count = options[:count]
       @counter.count == absolute_count
     else
