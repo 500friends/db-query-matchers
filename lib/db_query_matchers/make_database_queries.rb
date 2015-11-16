@@ -1,6 +1,4 @@
-require 'rspec/core'
-require 'rspec/expectations'
-require 'rspec/mocks'
+require 'rspec'
 
 # Custom matcher to check for database queries performed by a block of code.
 #
